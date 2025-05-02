@@ -34,7 +34,7 @@ export default function AdminManage() {
     password: "",
     photo_url: "",
     address: "",
-    birth_date: "",
+    brith_date: "",
     contact_number: "",
   });
 
@@ -114,7 +114,7 @@ export default function AdminManage() {
         password: "",
         photo_url: "",
         address: "",
-        birth_date: "",
+        brith_date: "",
         contact_number: "",
       });
       setPhotoFile(null);
@@ -366,16 +366,16 @@ export default function AdminManage() {
                 {/* Birth Date */}
                 <div>
                   <label
-                    htmlFor="birth_date"
+                    htmlFor="brith_date"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
                     Birth Date
                   </label>
                   <input
                     type="date"
-                    id="birth_date"
-                    name="birth_date"
-                    value={newAdmin.birth_date}
+                    id="brith_date"
+                    name="brith_date"
+                    value={newAdmin.brith_date}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
                   />

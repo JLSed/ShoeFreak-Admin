@@ -87,7 +87,7 @@ export const createAdminAccount = async (userData: {
   password: string;
   photo_url: string;
   address: string;
-  birth_date: string;
+  brith_date: string;
   contact_number: string;
 }) => {
   // First create auth user
@@ -113,7 +113,7 @@ export const createAdminAccount = async (userData: {
       email: userData.email,
       photo_url: userData.photo_url,
       address: userData.address,
-      birth_date: userData.birth_date,
+      brith_date: userData.brith_date,
       contact_number: userData.contact_number,
       type: "ADMIN",
       status: "ACTIVE",
