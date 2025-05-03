@@ -1,11 +1,13 @@
 import { FormEvent, useState } from "react";
 import { loginWithEmailAndPassword } from "../lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -14,7 +16,7 @@ export default function Login() {
 
     try {
       await loginWithEmailAndPassword(email, password);
-      // No need to navigate here - AuthProvider will handle this
+      navigate("/home");
     } catch (error) {
       console.error("Login error:", error);
       setError("Invalid email or password. Please try again.");

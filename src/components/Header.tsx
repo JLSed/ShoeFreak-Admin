@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { FaBell, FaSignOutAlt } from "react-icons/fa";
-import { fetchCurrentUser } from "../lib/supabase";
+import { fetchCurrentUser, logout } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./AuthProvider";
 
 export default function Header() {
   const [user, setUser] = useState<{
@@ -13,7 +12,6 @@ export default function Header() {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { signOut } = useAuth();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -44,7 +42,7 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      await logout();
       navigate("/");
     } catch (error) {
       console.error("Error logging out:", error);
