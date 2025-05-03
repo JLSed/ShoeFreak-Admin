@@ -182,7 +182,7 @@ export default function ProductModeration() {
                       {shoe.shoe_name}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700">
-                      ${shoe.price.toFixed(2)}
+                      ₱ {shoe.price.toFixed(2)}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700">
                       {Array.isArray(shoe.color)

@@ -157,7 +157,7 @@ export default function MiddleMan() {
                         {checkout.Shoes.shoe_name}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-700">
-                        ${checkout.Shoes.price.toFixed(2)}
+                        ₱ {checkout.Shoes.price.toFixed(2)}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-700">
                         {checkout.Users.first_name} {checkout.Users.last_name}
@@ -198,7 +198,7 @@ export default function MiddleMan() {
                 {selectedCheckout.Shoes.shoe_name}
               </h4>
               <p className="text-gray-600">
-                ${selectedCheckout.Shoes.price.toFixed(2)}
+                ₱ {selectedCheckout.Shoes.price.toFixed(2)}
               </p>
               <div className="flex justify-between mt-2 text-sm text-gray-500">
                 <p>
