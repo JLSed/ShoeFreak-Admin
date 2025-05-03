@@ -62,10 +62,6 @@ export default function SellerAccounts() {
     }
   };
 
-  const handleMessage = () => {
-    console.log("message");
-  };
-
   return (
     <div className="flex font-poppins">
       {/* Sidebar */}
@@ -95,13 +91,6 @@ export default function SellerAccounts() {
                 disabled={!selectedUser}
               >
                 Send Password Recovery
-              </button>
-              <button
-                onClick={() => selectedUser && handleMessage()}
-                className="py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                disabled={!selectedUser}
-              >
-                Message
               </button>
             </div>
             <p>Selected User: {selectedUser?.email}</p>
