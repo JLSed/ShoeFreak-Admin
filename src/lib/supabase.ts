@@ -250,7 +250,6 @@ export const sendAdminMessage = async (
       customer_id: sellerId, // Seller is the recipient
       message,
       sender: "SELLER", // Admin is treated as "SELLER" in sender field
-      read: false,
     },
   ]);
 

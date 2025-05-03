@@ -19,7 +19,6 @@ type Message = {
   message: string;
   sender: "SELLER" | "CUSTOMER"; // SELLER = Admin, CUSTOMER = Seller
   created_at: string;
-  read: boolean;
 };
 
 type Seller = {
@@ -118,19 +117,14 @@ export default function SellerChat() {
         "postgres_changes",
         { event: "*", schema: "public", table: "messages" },
         (payload) => {
-          // Adapt the check to the new schema
           const newMsg = payload.new as Message;
           if (
             (newMsg.seller_id === sellerId && newMsg.customer_id === adminId) ||
             (newMsg.seller_id === adminId && newMsg.customer_id === sellerId)
           ) {
             setMessages((prev) => {
-              const msgExists = prev.some((m) => m.id === newMsg.id);
-              if (!msgExists) {
-                setTimeout(scrollToBottom, 100);
-                return [...prev, newMsg];
-              }
-              return prev;
+              setTimeout(scrollToBottom, 100);
+              return [...prev, newMsg];
             });
           }
         }
