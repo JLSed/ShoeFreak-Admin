@@ -142,17 +142,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 // Route guards
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading, authCheckComplete } = useAuth();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
 
-  if (isLoading || !authCheckComplete) {
-    // Show loading spinner while checking auth
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-green-900">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
+  // if (isLoading || !authCheckComplete) {
+  //   // Show loading spinner while checking auth
+  //   return (
+  //     <div className="flex justify-center items-center min-h-screen bg-green-900">
+  //       <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-white"></div>
+  //     </div>
+  //   );
+  // }
 
   if (!isAuthenticated) {
     // Redirect to login if not authenticated
