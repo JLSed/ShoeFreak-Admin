@@ -24,7 +24,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex font-poppins">
+    <div className="flex h-svh  font-poppins">
       {/* Sidebar */}
       <Sidebar />
 

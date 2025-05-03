@@ -12,7 +12,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
 
   return (
-    <aside className="bg-green-800 text-white w-64 h-screen p-6">
+    <aside className="bg-green-800 text-white w-64 max-w-64 flex-1 p-6">
       <nav className="space-y-4">
         <button
           onClick={() => navigate("/home")}

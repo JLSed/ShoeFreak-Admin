@@ -77,7 +77,7 @@ export default function MiddleMan() {
   };
 
   return (
-    <div className="flex font-poppins">
+    <div className="flex h-svh  font-poppins">
       <Sidebar />
       <div className="flex-1">
         <Header />
