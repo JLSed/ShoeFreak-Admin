@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchAllShoes, removeShoe } from "../lib/supabase";
+import { fetchAllShoes, removeShoe, fetchCurrentUser } from "../lib/supabase";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
-import { FaTrash, FaEnvelope, FaTimes } from "react-icons/fa";
+import { FaTrash, FaEnvelope, FaTimes, FaHistory } from "react-icons/fa";
 
 type Shoe = {
   shoe_id: string;
@@ -36,6 +36,23 @@ export default function ProductModeration() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adminId, setAdminId] = useState<string | null>(null);
+
+  // Get current admin user
+  useEffect(() => {
+    const getCurrentAdmin = async () => {
+      try {
+        const currentUser = await fetchCurrentUser();
+        if (currentUser) {
+          setAdminId(currentUser.user_id);
+        }
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+      }
+    };
+
+    getCurrentAdmin();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,13 +68,13 @@ export default function ProductModeration() {
   }, []);
 
   const handleRemoveProduct = async () => {
-    if (!selectedShoe) return;
+    if (!selectedShoe || !adminId) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      await removeShoe(selectedShoe.shoe_id);
+      await removeShoe(selectedShoe.shoe_id, adminId);
 
       // Update local state
       setShoes((prevShoes) =>
@@ -68,7 +85,7 @@ export default function ProductModeration() {
         )
       );
 
-      setSuccess("Product has been removed successfully.");
+      setSuccess("Product has been removed successfully and logged in audit.");
       setShowModal(false);
     } catch (error) {
       console.error("Error removing product:", error);
@@ -101,7 +118,16 @@ export default function ProductModeration() {
       <div className="flex-1">
         <Header />
         <main className="p-6">
-          <h2 className="text-2xl font-bold mb-6">Product Moderation</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Product Moderation</h2>
+            <button
+              onClick={() => navigate("/audit-logs")}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md flex items-center"
+            >
+              <FaHistory className="mr-2" />
+              View Audit Logs
+            </button>
+          </div>
 
           {success && (
             <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md flex justify-between items-center">
@@ -278,9 +304,11 @@ export default function ProductModeration() {
             <div className="flex flex-col space-y-3">
               <button
                 onClick={handleRemoveProduct}
-                disabled={loading || selectedShoe.status === "REMOVED"}
+                disabled={
+                  loading || selectedShoe.status === "REMOVED" || !adminId
+                }
                 className={`flex items-center justify-center py-2 px-4 rounded-md ${
-                  selectedShoe.status === "REMOVED" || loading
+                  selectedShoe.status === "REMOVED" || loading || !adminId
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-red-600 text-white hover:bg-red-700"
                 }`}
@@ -290,6 +318,8 @@ export default function ProductModeration() {
                   ? "Product Already Removed"
                   : loading
                   ? "Processing..."
+                  : !adminId
+                  ? "Auth Required"
                   : "Remove Product"}
               </button>
 

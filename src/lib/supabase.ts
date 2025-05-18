@@ -43,7 +43,7 @@ export const fetchCurrentUser = async () => {
 
   const { data, error: userError } = await supabase
     .from("Users")
-    .select("user_id, first_name, last_name, photo_url")
+    .select("*")
     .eq("user_id", user.user.id)
     .single();
 
@@ -201,7 +201,36 @@ export const fetchAllShoes = async () => {
 };
 
 // Update shoe status to REMOVED
-export const removeShoe = async (shoeId: string) => {
+export const removeShoe = async (shoeId: string, adminId: string) => {
+  // First, get the shoe data to store in audit log
+  const { data: shoeData, error: fetchError } = await supabase
+    .from("Shoes")
+    .select(
+      `
+      shoe_id,
+      shoe_name,
+      price,
+      color,
+      size,
+      image_url,
+      status,
+      published_by,
+      created_at,
+      Users:published_by (
+        first_name,
+        last_name,
+        email
+      )
+      `
+    )
+    .eq("shoe_id", shoeId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  // Update the shoe status to REMOVED
   const { error } = await supabase
     .from("Shoes")
     .update({ status: "REMOVED" })
@@ -209,6 +238,21 @@ export const removeShoe = async (shoeId: string) => {
 
   if (error) {
     throw error;
+  }
+
+  // Log the action in audit log
+  const { error: auditError } = await supabase.from("admin_audit_logs").insert({
+    admin_id: adminId,
+    action_type: "DELETE_PRODUCT",
+    target_type: "PRODUCT",
+    target_id: shoeId,
+    target_data: shoeData,
+    notes: `Product "${shoeData.shoe_name}" removed by admin`,
+  });
+
+  if (auditError) {
+    console.error("Error logging audit:", auditError);
+    // Continue even if audit logging fails
   }
 
   return { success: true };
@@ -372,4 +416,300 @@ export const fetchMiddleManCheckouts = async (): Promise<Checkout[]> => {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   return checkoutsWithSeller;
+};
+
+// Fetch all posts with user information
+export const fetchAllPosts = async (
+  dateFilter?: string,
+  emailFilter?: string
+) => {
+  let query = supabase
+    .from("posts")
+    .select(
+      `
+      id, 
+      user_id, 
+      content, 
+      image_url, 
+      created_at,
+      updated_at,
+      Users:user_id (
+        first_name,
+        last_name,
+        email,
+        photo_url
+      ),
+      post_likes!post_likes_post_id_fkey (
+        id
+      ),
+      comments!comments_post_id_fkey (
+        id
+      )
+    `
+    )
+    .order("created_at", { ascending: false });
+
+  // Apply date filter if provided
+  if (dateFilter && dateFilter !== "all") {
+    const today = new Date();
+    let startDate;
+
+    switch (dateFilter) {
+      case "today":
+        startDate = new Date(today);
+        startDate.setHours(0, 0, 0, 0);
+        query = query.gte("created_at", startDate.toISOString());
+        break;
+      case "week":
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        query = query.gte("created_at", startDate.toISOString());
+        break;
+      case "month":
+        startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - 1);
+        query = query.gte("created_at", startDate.toISOString());
+        break;
+      // "all" case doesn't need any filter
+    }
+  }
+
+  // Apply email filter if provided
+  if (emailFilter && emailFilter.trim() !== "") {
+    // First, find users matching the email filter
+    const { data: users, error: userError } = await supabase
+      .from("Users")
+      .select("user_id")
+      .ilike("email", `%${emailFilter}%`);
+
+    if (userError) {
+      throw userError;
+    }
+
+    if (users && users.length > 0) {
+      const userIds = users.map((user) => user.user_id);
+      query = query.in("user_id", userIds);
+    } else {
+      // No matching users found, return empty array
+      return [];
+    }
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw error;
+  }
+
+  // Calculate counts properly
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  return data.map((post) => ({
+    id: post.id,
+    user_id: post.user_id,
+    content: post.content,
+    image_url: post.image_url,
+    created_at: post.created_at,
+    updated_at: post.updated_at,
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    Users: {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      first_name: post.Users?.first_name || "",
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      last_name: post.Users?.last_name || "",
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      email: post.Users?.email || "",
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      photo_url: post.Users?.photo_url || null,
+    },
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    likesCount: post.post_likes ? post.post_likes.length : 0,
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    commentsCount: post.comments ? post.comments.length : 0,
+  }));
+};
+
+// Fetch a single post with detailed information
+export const fetchPostDetails = async (postId: string) => {
+  const { data, error } = await supabase
+    .from("posts")
+    .select(
+      `
+      id, 
+      user_id, 
+      content, 
+      image_url, 
+      created_at,
+      updated_at,
+      Users:user_id (
+        first_name,
+        last_name,
+        email,
+        photo_url
+      )
+    `
+    )
+    .eq("id", postId)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  // Get likes count
+  const { count: likesCount, error: likesError } = await supabase
+    .from("post_likes")
+    .select("id", { count: "exact" })
+    .eq("post_id", postId);
+
+  if (likesError) {
+    throw likesError;
+  }
+
+  // Get comments with user information
+  const { data: comments, error: commentsError } = await supabase
+    .from("comments")
+    .select(
+      `
+      id,
+      post_id,
+      user_id,
+      content,
+      created_at,
+      Users:user_id (
+        first_name,
+        last_name,
+        photo_url
+      )
+    `
+    )
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true });
+
+  if (commentsError) {
+    throw commentsError;
+  }
+
+  return {
+    ...data,
+    likesCount: likesCount ?? 0,
+    comments: comments ?? [],
+  };
+};
+
+// Delete a post
+export const deletePost = async (postId: string, adminId: string) => {
+  // First, get the post data to store in audit log
+  const { data: postData, error: fetchError } = await supabase
+    .from("posts")
+    .select("*")
+    .eq("id", postId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  // Delete the post
+  const { error } = await supabase.from("posts").delete().eq("id", postId);
+
+  if (error) {
+    throw error;
+  }
+
+  // Log the action in audit log
+  const { error: auditError } = await supabase.from("admin_audit_logs").insert({
+    admin_id: adminId,
+    action_type: "DELETE_POST",
+    target_type: "POST",
+    target_id: postId,
+    target_data: postData,
+    notes: `Post deleted by admin`,
+  });
+
+  if (auditError) {
+    console.error("Error logging audit:", auditError);
+    // Continue even if audit logging fails
+  }
+
+  return { success: true };
+};
+
+// Fetch audit logs
+export const fetchAuditLogs = async (
+  actionType?: string,
+  adminId?: string,
+  startDate?: string,
+  endDate?: string
+) => {
+  let query = supabase
+    .from("admin_audit_logs")
+    .select(
+      `
+      id,
+      admin_id,
+      action_type,
+      target_type,
+      target_id,
+      target_data,
+      action_timestamp,
+      notes,
+      Users:admin_id (
+        first_name,
+        last_name,
+        email,
+        photo_url
+      )
+    `
+    )
+    .order("action_timestamp", { ascending: false });
+
+  // Apply filters
+  if (actionType) {
+    query = query.eq("action_type", actionType);
+  }
+
+  if (adminId) {
+    query = query.eq("admin_id", adminId);
+  }
+
+  if (startDate) {
+    query = query.gte("action_timestamp", startDate);
+  }
+
+  if (endDate) {
+    // Add one day to include the entire end date
+    const endDateObj = new Date(endDate);
+    endDateObj.setDate(endDateObj.getDate() + 1);
+    query = query.lt("action_timestamp", endDateObj.toISOString());
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+// Fetch all admins for the filter dropdown
+export const fetchAllAdmins = async () => {
+  const { data, error } = await supabase
+    .from("Users")
+    .select("user_id, first_name, last_name, email")
+    .eq("type", "ADMIN");
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 };
