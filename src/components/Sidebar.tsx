@@ -8,6 +8,7 @@ import {
   FaRegFile,
   FaHistory,
   FaLock,
+  FaMoneyBill,
 } from "react-icons/fa";
 import { MdDashboard } from "react-icons/md";
 import { useAuth } from "./AuthProvider";
@@ -21,6 +22,12 @@ export default function Sidebar() {
   const handleAdminManageClick = () => {
     if (isSuperAdmin) {
       navigate("/admin-manage");
+    }
+  };
+
+  const handleServiceFeesClick = () => {
+    if (isSuperAdmin) {
+      navigate("/service-fees");
     }
   };
 
@@ -90,6 +97,20 @@ export default function Sidebar() {
         >
           <FaRegFile className="mr-3" />
           Post Moderation
+        </button>
+        <button
+          onClick={handleServiceFeesClick}
+          onMouseEnter={() => !isSuperAdmin && setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+          className={`w-full flex items-center text-left py-2 px-4 rounded-md ${
+            isSuperAdmin
+              ? "hover:bg-green-700"
+              : "opacity-50 cursor-not-allowed"
+          }`}
+        >
+          <FaMoneyBill className="mr-3" />
+          Service Fees
+          {!isSuperAdmin && <FaLock className="ml-2 text-xs" />}
         </button>
         <button
           onClick={() => navigate("/audit-logs")}

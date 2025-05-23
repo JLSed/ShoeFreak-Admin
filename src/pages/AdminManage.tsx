@@ -6,25 +6,24 @@ import {
 } from "../lib/supabase";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
+import { FaTimes, FaLock } from "react-icons/fa";
+
+type AdminUser = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  status: string;
+  last_sign_in_at?: string | null;
+  type: string;
+};
 
 export default function AdminManage() {
   // State for admin accounts
-  const [admins, setAdmins] = useState<
-    {
-      id: string;
-      first_name: string;
-      last_name: string;
-      email: string;
-      status: string;
-    }[]
-  >([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [superAdmins, setSuperAdmins] = useState<AdminUser[]>([]);
 
-  const [selectedAdmin, setSelectedAdmin] = useState<null | {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  }>(null);
+  const [selectedAdmin, setSelectedAdmin] = useState<AdminUser | null>(null);
 
   // State for the new admin form
   const [newAdmin, setNewAdmin] = useState({
@@ -49,8 +48,13 @@ export default function AdminManage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch regular admins
         const adminAccounts = await fetchUsersByType("ADMIN");
         setAdmins(adminAccounts);
+
+        // Fetch super admins
+        const superAdminAccounts = await fetchUsersByType("SUPER ADMIN");
+        setSuperAdmins(superAdminAccounts);
       } catch (error) {
         console.error("Error fetching admin accounts:", error);
       }
@@ -80,6 +84,29 @@ export default function AdminManage() {
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Format last sign in date
+  const formatLastSignIn = (dateString?: string | null) => {
+    if (!dateString) return "Never";
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid date";
+
+    // Calculate time difference in days
+    const diffTime = Math.abs(new Date().getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return "Today";
+    } else if (diffDays === 1) {
+      return "Yesterday";
+    } else if (diffDays < 30) {
+      return `${diffDays} days ago`;
+    } else {
+      const diffMonths = Math.floor(diffDays / 30);
+      return diffMonths === 1 ? "1 month ago" : `${diffMonths} months ago`;
     }
   };
 
@@ -136,7 +163,7 @@ export default function AdminManage() {
   };
 
   return (
-    <div className="flex h-svh font-poppins">
+    <div className="flex font-poppins">
       {/* Sidebar */}
       <Sidebar />
       <div className="flex-1">
@@ -144,7 +171,121 @@ export default function AdminManage() {
         <main className="p-6">
           <h2 className="text-2xl font-bold mb-6">Admin Management</h2>
 
-          {/* Admin Accounts Section */}
+          {/* Success/Error Messages */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md flex justify-between items-center">
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-700 hover:text-red-900"
+              >
+                <FaTimes />
+              </button>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md flex justify-between items-center">
+              <span>{success}</span>
+              <button
+                onClick={() => setSuccess(null)}
+                className="text-green-700 hover:text-green-900"
+              >
+                <FaTimes />
+              </button>
+            </div>
+          )}
+
+          {/* Super Admin Accounts Section */}
+          <div className="mb-8">
+            <div className="flex items-center mb-4">
+              <h3 className="text-xl font-semibold mr-2">
+                Super Admin Account
+              </h3>
+            </div>
+
+            {/* Super Admin Table */}
+            <div className="overflow-x-auto mb-8">
+              <table className="min-w-full bg-white shadow-md rounded-lg">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
+                      First Name
+                    </th>
+                    <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
+                      Last Name
+                    </th>
+                    <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
+                      Email
+                    </th>
+                    <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
+                      Status
+                    </th>
+                    <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
+                      Last Sign In
+                    </th>
+                    <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
+                      Access
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {superAdmins.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="py-4 px-6 text-center text-sm text-gray-500"
+                      >
+                        No super admin accounts found.
+                      </td>
+                    </tr>
+                  ) : (
+                    superAdmins.map((admin) => (
+                      <tr
+                        key={admin.id}
+                        className="bg-yellow-50 hover:bg-yellow-100"
+                      >
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          {admin.first_name}
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          {admin.last_name}
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          {admin.email}
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              admin.status === "ACTIVE"
+                                ? "bg-green-100 text-green-800"
+                                : admin.status === "BANNED"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {admin.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          {formatLastSignIn(admin.last_sign_in_at)}
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700 flex items-center">
+                          Full Access
+                          <FaLock
+                            className="ml-2 text-xs text-gray-500"
+                            title="Protected Account"
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Regular Admin Accounts Section */}
           <div className="mb-8">
             <h3 className="text-xl font-semibold mb-4">Admin Accounts</h3>
 
@@ -175,31 +316,58 @@ export default function AdminManage() {
                     <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
                       Status
                     </th>
+                    <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
+                      Last Sign In
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {admins.map((admin) => (
-                    <tr
-                      key={admin.id}
-                      className={`cursor-pointer ${
-                        selectedAdmin?.id === admin.id ? "bg-green-100" : ""
-                      } hover:bg-gray-50`}
-                      onClick={() => setSelectedAdmin(admin)}
-                    >
-                      <td className="py-3 px-6 text-sm text-gray-700">
-                        {admin.first_name}
-                      </td>
-                      <td className="py-3 px-6 text-sm text-gray-700">
-                        {admin.last_name}
-                      </td>
-                      <td className="py-3 px-6 text-sm text-gray-700">
-                        {admin.email}
-                      </td>
-                      <td className="py-3 px-6 text-sm text-gray-700">
-                        {admin.status}
+                  {admins.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-4 px-6 text-center text-sm text-gray-500"
+                      >
+                        No admin accounts found.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    admins.map((admin) => (
+                      <tr
+                        key={admin.id}
+                        className={`cursor-pointer ${
+                          selectedAdmin?.id === admin.id ? "bg-green-100" : ""
+                        } hover:bg-gray-50`}
+                        onClick={() => setSelectedAdmin(admin)}
+                      >
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          {admin.first_name}
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          {admin.last_name}
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          {admin.email}
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              admin.status === "ACTIVE"
+                                ? "bg-green-100 text-green-800"
+                                : admin.status === "BANNED"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {admin.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-6 text-sm text-gray-700">
+                          {formatLastSignIn(admin.last_sign_in_at)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -208,18 +376,6 @@ export default function AdminManage() {
           {/* Create New Admin Section */}
           <div>
             <h3 className="text-xl font-semibold mb-4">Create New Admin</h3>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
-                {success}
-              </div>
-            )}
 
             <form
               onSubmit={handleCreateAdmin}

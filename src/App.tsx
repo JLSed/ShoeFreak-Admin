@@ -11,6 +11,7 @@ import AuditLogs from "./pages/AuditLogs";
 import SellerChat from "./pages/SellerChat";
 import MiddleMan from "./pages/MiddleMan";
 import AuthProvider from "./components/AuthProvider";
+import ServiceFees from "./pages/ServiceFees";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/audit-logs" element={<AuditLogs />} />
           <Route path="/chat/:sellerId" element={<SellerChat />} />
           <Route path="/middleman" element={<MiddleMan />} />
+          <Route path="/service-fees" element={<ServiceFees />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

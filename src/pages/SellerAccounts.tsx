@@ -6,6 +6,7 @@ import {
 } from "../lib/supabase";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
+import { formatDistanceToNow, isValid } from "date-fns";
 
 export default function SellerAccounts() {
   const [users, setUsers] = useState<
@@ -15,6 +16,7 @@ export default function SellerAccounts() {
       last_name: string;
       email: string;
       status: string;
+      last_sign_in_at: string | null;
     }[]
   >([]);
   const [selectedUser, setSelectedUser] = useState<null | {
@@ -28,6 +30,7 @@ export default function SellerAccounts() {
     const fetchData = async () => {
       try {
         const sellers = await fetchUsersByType("SELLER");
+        console.log("Fetched sellers:", sellers);
         setUsers(sellers);
       } catch (error) {
         console.error("Error fetching sellers:", error);
@@ -36,6 +39,20 @@ export default function SellerAccounts() {
 
     fetchData();
   }, []);
+
+  const formatLastSignIn = (dateString: string | null) => {
+    if (!dateString) return "Never";
+
+    const date = new Date(dateString);
+    if (!isValid(date)) return "Invalid date";
+
+    try {
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Unknown";
+    }
+  };
 
   const handleBanAccount = async (userId: string) => {
     try {
@@ -63,7 +80,7 @@ export default function SellerAccounts() {
   };
 
   return (
-    <div className="flex h-svh  font-poppins">
+    <div className="flex h-svh font-poppins">
       {/* Sidebar */}
       <Sidebar />
       <div className="flex-1">
@@ -113,6 +130,9 @@ export default function SellerAccounts() {
                   <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
                     Status
                   </th>
+                  <th className="py-3 px-6 text-left text-sm font-medium text-gray-700">
+                    Last Sign In
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -134,7 +154,20 @@ export default function SellerAccounts() {
                       {user.email}
                     </td>
                     <td className="py-3 px-6 text-sm text-gray-700">
-                      {user.status}
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          user.status === "ACTIVE"
+                            ? "bg-green-100 text-green-800"
+                            : user.status === "BANNED"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-6 text-sm text-gray-700">
+                      {formatLastSignIn(user.last_sign_in_at)}
                     </td>
                   </tr>
                 ))}

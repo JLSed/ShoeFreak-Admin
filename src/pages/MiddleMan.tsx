@@ -11,6 +11,7 @@ type Checkout = {
   shoe_id: string;
   buyer_id: string;
   payment_method: string;
+  is_middleman_selected: boolean;
   Shoes: {
     shoe_name: string;
     price: number;

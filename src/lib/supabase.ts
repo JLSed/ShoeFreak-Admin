@@ -22,18 +22,50 @@ export const loginWithEmailAndPassword = async (
 };
 
 export const fetchUsersByType = async (type: string) => {
-  const { data, error } = await supabase
+  // First get all users with the specified type
+  const { data: usersData, error: usersError } = await supabase
     .from("Users")
     .select("*")
     .eq("type", type);
 
-  if (error) {
-    throw error;
+  if (usersError) {
+    throw usersError;
   }
 
-  return data;
-};
+  // For each user, get the last sign in time using our custom function
+  const usersWithLastSignIn = await Promise.all(
+    usersData.map(async (user) => {
+      try {
+        // Call the PostgreSQL function we created
+        const { data: lastSignInData, error: lastSignInError } =
+          await supabase.rpc("get_user_last_sign_in", {
+            user_uuid: user.user_id,
+          });
 
+        if (lastSignInError) {
+          console.error("Error fetching last sign in:", lastSignInError);
+          return {
+            ...user,
+            last_sign_in_at: null,
+          };
+        }
+
+        return {
+          ...user,
+          last_sign_in_at: lastSignInData,
+        };
+      } catch (error) {
+        console.error("Error fetching sign in data:", error);
+        return {
+          ...user,
+          last_sign_in_at: null,
+        };
+      }
+    })
+  );
+
+  return usersWithLastSignIn;
+};
 export const fetchCurrentUser = async () => {
   const { data: user, error } = await supabase.auth.getUser();
 
@@ -339,6 +371,7 @@ type Checkout = {
   shoe_id: string;
   buyer_id: string;
   payment_method: string;
+  is_middleman_selected: boolean;
   Shoes: {
     shoe_name: string;
     price: number;
@@ -368,6 +401,7 @@ export const fetchMiddleManCheckouts = async (): Promise<Checkout[]> => {
       shoe_id,
       buyer_id,
       payment_method,
+      is_middleman_selected,
       Shoes (
         shoe_name,
         price,
@@ -381,7 +415,7 @@ export const fetchMiddleManCheckouts = async (): Promise<Checkout[]> => {
       )
     `
     )
-    .eq("payment_method", "Middle Man")
+    .eq("is_middleman_selected", "TRUE")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -712,4 +746,73 @@ export const fetchAllAdmins = async () => {
   }
 
   return data;
+};
+
+// Fetch all service fees
+export const fetchServiceFees = async () => {
+  const { data, error } = await supabase
+    .from("service_fee")
+    .select("*")
+    .order("service_name", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+// Add a new service fee
+export const addServiceFee = async (
+  serviceName: string,
+  servicePrice: number
+) => {
+  const { data, error } = await supabase
+    .from("service_fee")
+    .insert([
+      {
+        service_name: serviceName,
+        service_price: servicePrice,
+      },
+    ])
+    .select();
+
+  if (error) {
+    throw error;
+  }
+
+  return data[0];
+};
+
+// Update an existing service fee
+export const updateServiceFee = async (
+  id: string,
+  serviceName: string,
+  servicePrice: number
+) => {
+  const { data, error } = await supabase
+    .from("service_fee")
+    .update({
+      service_name: serviceName,
+      service_price: servicePrice,
+    })
+    .eq("id", id)
+    .select();
+
+  if (error) {
+    throw error;
+  }
+
+  return data[0];
+};
+
+// Delete a service fee
+export const deleteServiceFee = async (id: string) => {
+  const { error } = await supabase.from("service_fee").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  return { success: true };
 };

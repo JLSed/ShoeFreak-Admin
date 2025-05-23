@@ -31,6 +31,7 @@ const protectedRoutes = [
   "/post-moderation",
   "/post-detail",
   "/audit-logs",
+  "/service-fees",
 ];
 
 export default function AuthProvider({ children }: AuthProviderProps) {
